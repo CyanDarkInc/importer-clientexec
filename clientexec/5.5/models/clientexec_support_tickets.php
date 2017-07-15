@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Support tickets Migrator
+ * Generic Clientexec Support tickets Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -33,12 +33,12 @@ class ClientexecSupportTickets
     /**
      * Get all the replies from an specific ticket.
      *
+     * @param mixed $ticket_id
      * @return mixed The result of the sql transaction
      */
     public function getTicketReplies($ticket_id)
     {
         return $this->remote->select()->from('troubleticket_log')->where('troubleticketid', '=', $ticket_id)->getStatement()->fetchAll();
-
     }
 
     /**

@@ -1,8 +1,9 @@
 <?php
+
 require_once dirname(__FILE__) . DS . '..' . DS . 'clientexec_migrator.php';
 
 /**
- * Clientexec 5.5 Migrator
+ * Clientexec 5.5 Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -13,13 +14,13 @@ require_once dirname(__FILE__) . DS . '..' . DS . 'clientexec_migrator.php';
 class Clientexec5_5 extends ClientexecMigrator
 {
     /**
-     * Construct
+     * Construct.
      *
      * @param Record $local The database connection object to the local server
      */
     public function __construct(Record $local)
     {
-        // Call parent constructor        
+        // Call parent constructor
         parent::__construct($local);
 
         // Set timeout limit
@@ -36,7 +37,7 @@ class Clientexec5_5 extends ClientexecMigrator
     }
 
     /**
-     * Processes settings (validating input). Sets any necessary input errors
+     * Processes settings (validating input). Sets any necessary input errors.
      *
      * @param array $vars An array of key/value input pairs
      */
@@ -117,12 +118,13 @@ class Clientexec5_5 extends ClientexecMigrator
             $this->remote = new Record($db_info);
         } catch (Exception $e) {
             $this->Input->setErrors([[$e->getMessage()]]);
+
             return;
         }
     }
 
     /**
-     * Processes configuration (validating input). Sets any necessary input errors
+     * Processes configuration (validating input). Sets any necessary input errors.
      *
      * @param array $vars An array of key/value input pairs
      */
@@ -142,7 +144,7 @@ class Clientexec5_5 extends ClientexecMigrator
     }
 
     /**
-     * Returns a view to handle settings
+     * Returns a view to handle settings.
      *
      * @param array $vars An array of input key/value pairs
      * @return string The HTML used to request input settings
@@ -150,7 +152,7 @@ class Clientexec5_5 extends ClientexecMigrator
     public function getSettings(array $vars)
     {
         $this->view = $this->makeView('settings', 'default', str_replace(ROOTWEBDIR, '', dirname(__FILE__) . DS));
-        $this->view->set('vars', (object)$vars);
+        $this->view->set('vars', (object) $vars);
 
         Loader::loadHelpers($this, ['Html', 'Form']);
 
@@ -158,7 +160,7 @@ class Clientexec5_5 extends ClientexecMigrator
     }
 
     /**
-     * Returns a view to configuration run after settings but before import
+     * Returns a view to configuration run after settings but before import.
      *
      * @param array $vars An array of input key/value pairs
      * @return string The HTML used to request input settings, return null to bypass
@@ -166,7 +168,7 @@ class Clientexec5_5 extends ClientexecMigrator
     public function getConfiguration(array $vars)
     {
         $this->view = $this->makeView('configuration', 'default', str_replace(ROOTWEBDIR, '', dirname(__FILE__) . DS));
-        $this->view->set('vars', (object)$vars);
+        $this->view->set('vars', (object) $vars);
 
         Loader::loadHelpers($this, ['Html', 'Form']);
         Loader::loadModels($this, ['Packages']);
@@ -190,7 +192,7 @@ class Clientexec5_5 extends ClientexecMigrator
     }
 
     /**
-     * Returns the module mapping file for the given module, or for the none module if module does not exist
+     * Returns the module mapping file for the given module, or for the none module if module does not exist.
      *
      * @param string $module The module
      * @param string $module_type The module type ('server' or 'registrar')

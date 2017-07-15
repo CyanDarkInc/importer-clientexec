@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Migrator
+ * Generic Clientexec Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -26,7 +26,7 @@ class ClientexecMigrator extends Migrator
     protected $default_country = 'US';
 
     /**
-     * Runs the import, sets any Input errors encountered
+     * Runs the import, sets any Input errors encountered.
      */
     public function import()
     {
@@ -83,7 +83,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import users groups
+     * Import users groups.
      */
     protected function importUsersGroups()
     {
@@ -133,7 +133,7 @@ class ClientexecMigrator extends Migrator
                         'permission' => []
                     ]);
                 }
-            } else if ($group->isadmin && !$group->issuperadmin) {
+            } elseif ($group->isadmin && !$group->issuperadmin) {
                 if ($group->name == 'Billing') {
                     // Map to the existent billing staff group
                     $this->mappings['staff_groups'][$group->id] = $groups['billing'];
@@ -147,7 +147,7 @@ class ClientexecMigrator extends Migrator
                         'permission' => []
                     ]);
                 }
-            } else if (!$group->isadmin && !$group->issuperadmin) {
+            } elseif (!$group->isadmin && !$group->issuperadmin) {
                 if ($group->name == 'Customer') {
                     // Map to the existent client group
                     $this->mappings['client_groups'][$group->id] = $groups['client'];
@@ -166,7 +166,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import staff
+     * Import staff.
      */
     protected function importStaff()
     {
@@ -220,7 +220,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import clients
+     * Import clients.
      */
     protected function importClients()
     {
@@ -311,7 +311,7 @@ class ClientexecMigrator extends Migrator
 
                 // Add the payment account
                 if ($user->data3 != '') {
-                    $credit_card = mcrypt_decrypt('blowfish', $user->id.$this->settings['passphrase'], base64_decode($user->data3), 'cbc', base64_decode($user->data2));
+                    $credit_card = mcrypt_decrypt('blowfish', $user->id . $this->settings['passphrase'], base64_decode($user->data3), 'cbc', base64_decode($user->data2));
                     $vars = [
                         'contact_id' => $contact_id,
                         'first_name' => $user->firstname,
@@ -356,9 +356,10 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import clients notes
+     * Import clients notes.
      */
-    protected function importClientsNotes() {
+    protected function importClientsNotes()
+    {
         // Load required models
         Loader::loadModels($this, ['Clients']);
 
@@ -370,7 +371,7 @@ class ClientexecMigrator extends Migrator
 
         // Import notes
         $this->local->begin();
-        foreach($notes as $note) {
+        foreach ($notes as $note) {
             $vars = [
                 'client_id' => $this->mappings['clients'][$note->target_id],
                 'staff_id' => isset($this->mappings['staff'][$note->admin_id]) ? $this->mappings['staff'][$note->admin_id] : 0,
@@ -386,7 +387,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import taxes
+     * Import taxes.
      */
     protected function importTaxes()
     {
@@ -398,7 +399,7 @@ class ClientexecMigrator extends Migrator
 
         // Import taxes
         $this->local->begin();
-        foreach($taxes as $tax) {
+        foreach ($taxes as $tax) {
             $state = $this->local->select()->from('states')->where('name', '=', trim($tax->state))->fetch();
             $vars = [
                 'company_id' => Configure::get('Blesta.company_id'),
@@ -417,7 +418,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import currencies
+     * Import currencies.
      */
     protected function importCurrencies()
     {
@@ -432,7 +433,7 @@ class ClientexecMigrator extends Migrator
 
         // Import currencies
         $this->local->begin();
-        foreach($currencies as $currency) {
+        foreach ($currencies as $currency) {
             $vars = [
                 'code' => $currency->abrv,
                 'company_id' => Configure::get('Blesta.company_id'),
@@ -452,7 +453,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import invoices
+     * Import invoices.
      */
     protected function importInvoices()
     {
@@ -467,7 +468,7 @@ class ClientexecMigrator extends Migrator
 
         // Import invoices
         $this->local->begin();
-        foreach($invoices as $invoice) {
+        foreach ($invoices as $invoice) {
             // Get invoice lines
             $lines = $this->ClientexecInvoices->getInvoiceLines($invoice->id);
 
@@ -537,7 +538,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import transactions
+     * Import transactions.
      */
     protected function importTransactions()
     {
@@ -553,7 +554,7 @@ class ClientexecMigrator extends Migrator
 
         // Import transactions
         $this->local->begin();
-        foreach($transactions as $transaction) {
+        foreach ($transactions as $transaction) {
             // Get parent invoice
             $invoice = $this->ClientexecInvoices->getInvoice($transaction->invoiceid);
 
@@ -564,7 +565,7 @@ class ClientexecMigrator extends Migrator
             $status = 'approved';
             if ($transaction->action == 'refund') {
                 $status = 'refunded';
-            } else if ($transaction->accepted != '1') {
+            } elseif ($transaction->accepted != '1') {
                 $status = 'declined';
             }
 
@@ -596,7 +597,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import modules
+     * Import modules.
      */
     protected function importModules()
     {
@@ -612,9 +613,9 @@ class ClientexecMigrator extends Migrator
         // Import servers
         foreach ($servers as $server) {
             // Build row array
-            $notes = (!empty($server->statsurl) ? 'Stats URL: '.$server->statsurl."\n" : null) .
-                (!empty($server->status_message) ? 'Status Message: '.$server->status_message."\n" : null) .
-                (!empty($server->provider) ? 'Provider/Datacenter: '.$server->provider : null);
+            $notes = (!empty($server->statsurl) ? 'Stats URL: ' . $server->statsurl . "\n" : null) .
+                (!empty($server->status_message) ? 'Status Message: ' . $server->status_message . "\n" : null) .
+                (!empty($server->provider) ? 'Provider/Datacenter: ' . $server->provider : null);
 
             $row = [
                 'type' => $server->plugin,
@@ -670,7 +671,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Installs the module row
+     * Installs the module row.
      *
      * @param array $row An array of key/value pairs, including but not limited to:
      *  - type The module name in Clientexec
@@ -702,7 +703,7 @@ class ClientexecMigrator extends Migrator
         // Install the module row meta fields
         if (isset($mapping['module_row_meta'])) {
             foreach ($mapping['module_row_meta'] as $meta_row) {
-                $vars = (array)$meta_row;
+                $vars = (array) $meta_row;
                 $vars['value'] = null;
                 $vars['module_row_id'] = $module_row_id;
 
@@ -740,11 +741,12 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Installs the given module and returns the module ID, if already installed simply returns the module ID
+     * Installs the given module and returns the module ID, if already installed simply returns the module ID.
      *
      * @param string $module The Clientexec module name
      * @param array An array of mapping fields for this particular module
      *  (optional, will automatically load if not given)
+     * @param null|mixed $mapping
      * @return int The ID of the module in Blesta
      */
     private function installModule($module, $mapping = null)
@@ -786,7 +788,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import packages
+     * Import packages.
      */
     protected function importPackages()
     {
@@ -821,7 +823,7 @@ class ClientexecMigrator extends Migrator
 
         // Import packages
         $this->local->begin();
-        foreach($packages as $package) {
+        foreach ($packages as $package) {
             // Get remote package pricing & info
             $pricing = unserialize($package->pricing);
             $stock = unserialize($package->stockinfo);
@@ -923,7 +925,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Adds package pricing
+     * Adds package pricing.
      *
      * @param array $pricing A numerically indexed array of pricing info including:
      *  - term
@@ -961,11 +963,12 @@ class ClientexecMigrator extends Migrator
                 $pricing_id = $this->local->lastInsertId();
             }
         }
+
         return $pricing_id;
     }
 
     /**
-     * Adds package meta for the given package
+     * Adds package meta for the given package.
      *
      * @param array $package An array of package info including:
      *  - id The ID of the package in WHMCS
@@ -977,7 +980,7 @@ class ClientexecMigrator extends Migrator
         // Add package meta
         if (isset($mapping['package_meta'])) {
             foreach ($mapping['package_meta'] as $meta) {
-                $vars = (array)$meta;
+                $vars = (array) $meta;
                 $vars['package_id'] = $this->mappings['packages'][$package['id']];
                 $vars['value'] = null;
 
@@ -1012,7 +1015,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import package options
+     * Import package options.
      */
     protected function importPackageOptions()
     {
@@ -1080,7 +1083,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import services
+     * Import services.
      */
     protected function importServices()
     {
@@ -1188,7 +1191,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Adds service fields
+     * Adds service fields.
      *
      * @param array $service An array of key/value pairs for the remote service including:
      *  - id The ID of the service on the remote server
@@ -1230,7 +1233,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import support departments
+     * Import support departments.
      */
     protected function importSupportDepartments()
     {
@@ -1328,7 +1331,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import support tickets
+     * Import support tickets.
      */
     protected function importSupportTickets()
     {
@@ -1357,7 +1360,7 @@ class ClientexecMigrator extends Migrator
         // Import tickets
         foreach ($tickets as $ticket) {
             $vars = [
-                'code' => is_numeric($ticket->id) ? (int)$ticket->id : preg_replace('/[^0-9]+/', '', $ticket->id),
+                'code' => is_numeric($ticket->id) ? (int) $ticket->id : preg_replace('/[^0-9]+/', '', $ticket->id),
                 'department_id' => isset($this->mappings['support_departments'][$ticket->assignedtodeptid]) ? $this->mappings['support_departments'][$ticket->assignedtodeptid] : 0,
                 'staff_id' => isset($this->mappings['staff'][$ticket->assignedtoid]) ? $this->mappings['staff'][$ticket->assignedtoid] : null,
                 'service_id' => null,
@@ -1383,7 +1386,6 @@ class ClientexecMigrator extends Migrator
                         'type' => 'reply',
                         'details' => $response->message,
                         'date_added' => $this->Companies->dateToUtc($response->mydatetime),
-
                     ];
                     $this->local->insert('support_replies', $vars);
                 }
@@ -1413,7 +1415,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import knowledge base
+     * Import knowledge base.
      */
     protected function importKnowledgeBase()
     {
@@ -1471,7 +1473,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import coupons
+     * Import coupons.
      */
     protected function importCoupons()
     {
@@ -1533,7 +1535,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Import settings
+     * Import settings.
      */
     protected function importSettings()
     {
@@ -1562,7 +1564,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Returns the transaction type ID
+     * Returns the transaction type ID.
      *
      * @param string $type The version 2 transaction type
      * @return string The transaction type ID
@@ -1607,13 +1609,15 @@ class ClientexecMigrator extends Migrator
                     }
                 }
         }
+
         return null;
     }
 
     /**
-     * Returns the currency format
+     * Returns the currency format.
      *
      * @param int WHMCS currency format value
+     * @param mixed $currency
      * @return string Blesta currency format value
      */
     private function getCurrencyFormat($currency)
@@ -1628,7 +1632,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Load the given local model
+     * Load the given local model.
      *
      * @param string $name The name of the model to load
      */
@@ -1641,7 +1645,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Set debug data
+     * Set debug data.
      *
      * @param string $str The debug data
      */
@@ -1671,7 +1675,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Start a timer for the given task
+     * Start a timer for the given task.
      *
      * @param string $task
      */
@@ -1681,7 +1685,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Pause a timer for the given task
+     * Pause a timer for the given task.
      *
      * @param string $task
      */
@@ -1692,7 +1696,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Unpause a timer for the given task
+     * Unpause a timer for the given task.
      *
      * @param string $task
      */
@@ -1702,7 +1706,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * End a timer for the given task, output to debug
+     * End a timer for the given task, output to debug.
      *
      * @param string $task
      */

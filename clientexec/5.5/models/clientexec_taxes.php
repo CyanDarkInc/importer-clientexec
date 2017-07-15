@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Taxes Migrator
+ * Generic Clientexec Taxes Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec

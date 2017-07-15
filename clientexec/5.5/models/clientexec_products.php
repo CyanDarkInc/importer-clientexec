@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Products Migrator
+ * Generic Clientexec Products Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -43,6 +43,7 @@ class ClientexecProducts
     /**
      * Get an specific server.
      *
+     * @param mixed $server_id
      * @return mixed The result of the sql transaction
      */
     public function getServer($server_id)
@@ -53,6 +54,7 @@ class ClientexecProducts
     /**
      * Get the fields of an specific server.
      *
+     * @param mixed $server_id
      * @return mixed The result of the sql transaction
      */
     public function getServerFields($server_id)
@@ -63,6 +65,7 @@ class ClientexecProducts
     /**
      * Get the name servers of an specific server.
      *
+     * @param mixed $server_id
      * @return mixed The result of the sql transaction
      */
     public function getServerNameservers($server_id)
@@ -73,6 +76,7 @@ class ClientexecProducts
     /**
      * Get an specific package.
      *
+     * @param mixed $package_id
      * @return mixed The result of the sql transaction
      */
     public function getProduct($package_id)
@@ -83,6 +87,7 @@ class ClientexecProducts
     /**
      * Get the pricing of an specific package.
      *
+     * @param mixed $package_id
      * @return mixed The result of the sql transaction
      */
     public function getProductPricing($package_id)
@@ -188,6 +193,7 @@ class ClientexecProducts
     /**
      * Get the server ID of an specific package.
      *
+     * @param mixed $package_id
      * @return mixed The result of the sql transaction
      */
     public function getProductServer($package_id)
@@ -198,9 +204,11 @@ class ClientexecProducts
     /**
      * Get the fields of an specific package.
      *
+     * @param mixed $package_id
      * @return mixed The result of the sql transaction
      */
-    public function getProductFields($package_id) {
+    public function getProductFields($package_id)
+    {
         $product_fields = $this->remote->select()->from('package_variable')->where('packageid', '=', $package_id)->getStatement()->fetchAll();
 
         foreach ($product_fields as $key => $value) {
@@ -234,7 +242,7 @@ class ClientexecProducts
     }
 
     /**
-     * Returns a key/value pair array of field names and values for the given registrar
+     * Returns a key/value pair array of field names and values for the given registrar.
      *
      * @param string $registrar The registrar to fetch all key/value pairs for
      * @return array An array of key/value pairs for the registrar
@@ -257,6 +265,7 @@ class ClientexecProducts
     /**
      * Get all the products groups.
      *
+     * @param mixed $group_id
      * @return mixed The result of the sql transaction
      */
     public function getGroup($group_id)
@@ -277,6 +286,7 @@ class ClientexecProducts
     /**
      * Get all the packages from an specific addon.
      *
+     * @param mixed $addon_id
      * @return mixed The result of the sql transaction
      */
     public function getAddonPackages($addon_id)
@@ -287,6 +297,7 @@ class ClientexecProducts
     /**
      * Get all the prices from an specific addon.
      *
+     * @param mixed $addon_id
      * @return mixed The result of the sql transaction
      */
     public function getAddonPricing($addon_id)

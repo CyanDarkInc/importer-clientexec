@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Knowledge Base Migrator
+ * Generic Clientexec Knowledge Base Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -33,6 +33,7 @@ class ClientexecKnowledgeBase
     /**
      * Get all knowledge base articles from an specific category.
      *
+     * @param mixed $category_id
      * @return mixed The result of the sql transaction
      */
     public function getArticles($category_id)
