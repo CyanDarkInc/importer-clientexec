@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Settings Migrator
+ * Generic Clientexec Settings Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -39,6 +39,7 @@ class ClientexecSettings
     /**
      * Get an specific setting.
      *
+     * @param mixed $key
      * @return mixed The result of the sql transaction
      */
     public function getSetting($key)
@@ -46,7 +47,7 @@ class ClientexecSettings
         $settings = $this->get();
 
         foreach ($settings as $setting) {
-            if($setting->name == $key) {
+            if ($setting->name == $key) {
                 return $setting;
             }
         }

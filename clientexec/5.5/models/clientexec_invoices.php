@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Invoices Migrator
+ * Generic Clientexec Invoices Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -33,16 +33,18 @@ class ClientexecInvoices
     /**
      * Get an specific invoice.
      *
+     * @param mixed $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoice($invoice_id)
     {
-        return $this->remote->select()->from('invoice')->where('id', '=' , $invoice_id)->getStatement()->fetch();
+        return $this->remote->select()->from('invoice')->where('id', '=', $invoice_id)->getStatement()->fetch();
     }
 
     /**
      * Get all invoice lines from an specific invoice.
      *
+     * @param mixed $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceLines($invoice_id)
@@ -53,6 +55,7 @@ class ClientexecInvoices
     /**
      * Get all transactions from an specific invoice.
      *
+     * @param mixed $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceTransactions($invoice_id)
@@ -63,6 +66,7 @@ class ClientexecInvoices
     /**
      * Get the currency from an specific invoice.
      *
+     * @param mixed $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceCurrency($invoice_id)

@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Coupons Migrator
+ * Generic Clientexec Coupons Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec

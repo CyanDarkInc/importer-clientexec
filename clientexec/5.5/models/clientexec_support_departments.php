@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Support Departments Migrator
+ * Generic Clientexec Support Departments Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -33,6 +33,7 @@ class ClientexecSupportDepartments
     /**
      * Get all support departments.
      *
+     * @param mixed $department_id
      * @return mixed The result of the sql transaction
      */
     public function getDepartmentStaff($department_id)

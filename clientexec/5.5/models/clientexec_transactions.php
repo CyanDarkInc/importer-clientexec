@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Transactions Migrator
+ * Generic Clientexec Transactions Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec

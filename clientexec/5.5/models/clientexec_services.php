@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Services Migrator
+ * Generic Clientexec Services Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -21,7 +21,7 @@ class ClientexecServices
     }
 
     /**
-     * Fetch all standard services
+     * Fetch all standard services.
      *
      * @return PDOStatement
      */
@@ -31,8 +31,9 @@ class ClientexecServices
     }
 
     /**
-     * Fetch all the fields from an specific service
+     * Fetch all the fields from an specific service.
      *
+     * @param mixed $service_id
      * @return PDOStatement
      */
     public function getServiceFields($service_id)
@@ -48,8 +49,9 @@ class ClientexecServices
     }
 
     /**
-     * Get the service pricing
+     * Get the service pricing.
      *
+     * @param mixed $service_id
      * @return PDOStatement
      */
     public function getServicePricing($service_id)
@@ -70,8 +72,9 @@ class ClientexecServices
     }
 
     /**
-     * Get the next renew date of an specific service
+     * Get the next renew date of an specific service.
      *
+     * @param mixed $service_id
      * @return PDOStatement
      */
     public function getServiceNextRenewDate($service_id)
@@ -82,8 +85,9 @@ class ClientexecServices
     }
 
     /**
-     * Get the status of an specific service
+     * Get the status of an specific service.
      *
+     * @param mixed $service_id
      * @return PDOStatement
      */
     public function getServiceStatus($service_id)

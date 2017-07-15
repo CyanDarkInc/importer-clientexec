@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Users Migrator
+ * Generic Clientexec Users Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -43,6 +43,7 @@ class ClientexecUsers
     /**
      * Get an specific user group.
      *
+     * @param mixed $group_id
      * @return mixed The result of the sql transaction
      */
     public function getUserGroup($group_id)

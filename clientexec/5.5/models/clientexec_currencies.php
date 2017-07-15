@@ -1,6 +1,6 @@
 <?php
 /**
- * Generic Clientexec Currencies Migrator
+ * Generic Clientexec Currencies Migrator.
  *
  * @package blesta
  * @subpackage blesta.plugins.import_manager.components.migrators.clientexec
@@ -48,6 +48,7 @@ class ClientexecCurrencies
     public function getDefault()
     {
         $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->getStatement()->fetch();
+
         return !empty($currency->value) ? $currency->value : 'USD';
     }
 }
