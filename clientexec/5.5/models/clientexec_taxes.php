@@ -27,6 +27,6 @@ class ClientexecTaxes
      */
     public function get()
     {
-        return $this->remote->select()->from('taxrule')->getStatement()->fetchAll();
+        return $this->remote->select()->from('taxrule')->fetchAll();
     }
 }

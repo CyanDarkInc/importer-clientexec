@@ -21,23 +21,13 @@ class ClientexecCurrencies
     }
 
     /**
-     * Get all currencies.
-     *
-     * @return mixed The result of the sql transaction
-     */
-    public function get()
-    {
-        return $this->remote->select()->from('currency')->getStatement()->fetchAll();
-    }
-
-    /**
      * Get all enabled currencies.
      *
      * @return mixed The result of the sql transaction
      */
     public function getEnabled()
     {
-        return $this->remote->select()->from('currency')->where('enabled', '=', '1')->getStatement()->fetchAll();
+        return $this->remote->select()->from('currency')->where('enabled', '=', '1')->fetchAll();
     }
 
     /**
@@ -47,7 +37,7 @@ class ClientexecCurrencies
      */
     public function getDefault()
     {
-        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->getStatement()->fetch();
+        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->fetch();
 
         return !empty($currency->value) ? $currency->value : 'USD';
     }

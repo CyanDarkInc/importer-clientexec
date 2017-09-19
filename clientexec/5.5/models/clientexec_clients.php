@@ -27,7 +27,7 @@ class ClientexecClients
      */
     public function get()
     {
-        return $this->remote->select()->from('users')->where('groupid', '=', 1)->getStatement()->fetchAll();
+        return $this->remote->select()->from('users')->where('groupid', '=', 1)->fetchAll();
     }
 
     /**
@@ -37,6 +37,6 @@ class ClientexecClients
      */
     public function getNotes()
     {
-        return $this->remote->select()->from('clients_notes')->getStatement()->fetchAll();
+        return $this->remote->select()->from('clients_notes')->fetchAll();
     }
 }

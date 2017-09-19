@@ -16,14 +16,14 @@ class ClientexecMigrator extends Migrator
     protected $settings;
 
     /**
-     * @var bool Enable/disable debugging
-     */
-    protected $enable_debug = false;
-
-    /**
      * @var string Default conutry code
      */
     protected $default_country = 'US';
+
+    /**
+     * @var string Current path
+     */
+    protected $path;
 
     /**
      * Runs the import, sets any Input errors encountered.
@@ -31,23 +31,23 @@ class ClientexecMigrator extends Migrator
     public function import()
     {
         $actions = [
-            'importUsersGroups', // works
-            'importStaff', // works
-            'importClients', // works
-            'importClientsNotes', // works
-            'importTaxes', // works
-            'importCurrencies', // works
-            'importInvoices', // works
-            'importTransactions', // works
-            'importModules', // works
-            'importPackages', // works
-            'importPackageOptions', // works
-            'importServices', // works
-            'importSupportDepartments', // works
-            'importSupportTickets', // works
-            'importKnowledgeBase', // works
-            'importCoupons', // works
-            'importSettings' // works
+            'importUsersGroups',
+            'importStaff',
+            'importClients',
+            'importClientsNotes',
+            'importTaxes',
+            'importCurrencies',
+            'importInvoices',
+            'importTransactions',
+            'importModules',
+            'importPackages',
+            'importPackageOptions',
+            'importServices',
+            'importSupportDepartments',
+            'importSupportTickets',
+            'importKnowledgeBase',
+            'importCoupons',
+            'importSettings'
         ];
 
         $errors = [];
@@ -127,7 +127,7 @@ class ClientexecMigrator extends Migrator
                     // Create a new staff group
                     $this->mappings['staff_groups'][$group->id] = $this->StaffGroups->add([
                         'company_id' => Configure::get('Blesta.company_id'),
-                        'name' => $group->name,
+                        'name' => $this->decode($group->name),
                         'session_lock' => 1,
                         'permission_group' => [],
                         'permission' => []
@@ -141,7 +141,7 @@ class ClientexecMigrator extends Migrator
                     // Create a new staff group
                     $this->mappings['staff_groups'][$group->id] = $this->StaffGroups->add([
                         'company_id' => Configure::get('Blesta.company_id'),
-                        'name' => $group->name,
+                        'name' => $this->decode($group->name),
                         'session_lock' => 1,
                         'permission_group' => [],
                         'permission' => []
@@ -155,8 +155,8 @@ class ClientexecMigrator extends Migrator
                     // Create a new client group
                     $this->mappings['client_groups'][$group->id] = $this->ClientGroups->add([
                         'company_id' => Configure::get('Blesta.company_id'),
-                        'name' => $group->name,
-                        'description' => $group->description,
+                        'name' => $this->decode($group->name),
+                        'description' => $this->decode($group->description),
                         'color' => $group->groupcolor
                     ]);
                 }
@@ -177,44 +177,41 @@ class ClientexecMigrator extends Migrator
         $this->loadModel('ClientexecUsers');
 
         // Get users
-        $users = $this->ClientexecUsers->get();
-
-        // Modify password length in the database
-        $this->local->query('ALTER TABLE users MODIFY password VARCHAR(255);');
+        $users = $this->ClientexecUsers->getStaff();
 
         // Import staff members
         $this->local->begin();
         foreach ($users as $user) {
-            // Get current user group
-            $group = $this->ClientexecUsers->getUserGroup($user->groupid);
-
             // Get custom fields
             $fields = $this->ClientexecUsers->getCustomFields($user->id);
 
-            // Create staff member
-            if ($group->isadmin) {
-                // Create user account
-                $vars = [
-                    'username' => $user->email,
-                    'password' => $fields['password']->value,
-                    'date_added' => $this->Users->dateToUtc(date('c'))
-                ];
-                $this->local->insert('users', $vars);
-                $user_id = $this->local->lastInsertId();
+            // Create user account
+            $vars = [
+                'username' => $user->email,
+                'password' => $fields['password']->value,
+                'date_added' => $this->Users->dateToUtc(date('c'))
+            ];
+            $this->local->insert('users', $vars);
 
-                // Create staff account
-                $vars = [
-                    'user_id' => $user_id,
-                    'first_name' => $user->firstname,
-                    'last_name' => $user->lastname,
-                    'email' => $user->email,
-                    'status' => $user->active == '1' ? 'active' : 'inactive',
-                    'groups' => [
-                        $this->mappings['staff_groups'][$user->groupid]
-                    ]
-                ];
-                $this->addStaff($vars, $user->id);
+            if (!($user_id = $this->local->lastInsertId())) {
+                $vars['password'] = substr($vars['password'], 0, 64);
+                $this->local->insert('users', $vars);
+
+                $user_id = $this->local->lastInsertId();
             }
+
+            // Create staff account
+            $vars = [
+                'user_id' => $user_id,
+                'first_name' => $this->decode($user->firstname),
+                'last_name' => $this->decode($user->lastname),
+                'email' => $user->email,
+                'status' => $user->status == '1' ? 'active' : 'inactive',
+                'groups' => [
+                    $this->mappings['staff_groups'][$user->groupid]
+                ]
+            ];
+            $this->addStaff($vars, $user->id);
         }
         $this->local->commit();
     }
@@ -231,7 +228,7 @@ class ClientexecMigrator extends Migrator
         $this->loadModel('ClientexecUsers');
 
         // Get users
-        $users = $this->ClientexecUsers->get();
+        $users = $this->ClientexecUsers->getClients();
 
         // Import clients
         $this->local->begin();
@@ -243,7 +240,7 @@ class ClientexecMigrator extends Migrator
             $fields = $this->ClientexecUsers->getCustomFields($user->id);
 
             // Create client
-            if (!$group->isadmin || $group->iscustomersmaingroup) {
+            if ($group->iscustomersmaingroup) {
                 // Create user account
                 $vars = [
                     'username' => $user->email,
@@ -251,7 +248,13 @@ class ClientexecMigrator extends Migrator
                     'date_added' => $this->Users->dateToUtc(date('c'))
                 ];
                 $this->local->insert('users', $vars);
-                $user_id = $this->local->lastInsertId();
+
+                if (!($user_id = $this->local->lastInsertId())) {
+                    $vars['password'] = substr($vars['password'], 0, 64);
+                    $this->local->insert('users', $vars);
+
+                    $user_id = $this->local->lastInsertId();
+                }
 
                 // Create client account
                 $vars = [
@@ -259,7 +262,7 @@ class ClientexecMigrator extends Migrator
                     'id_value' => $user->id,
                     'user_id' => $user_id,
                     'client_group_id' => $this->mappings['client_groups'][$user->groupid],
-                    'status' => $user->active == '1' ? 'active' : 'inactive'
+                    'status' => (int) $user->status >= 0 ? 'active' : 'inactive'
                 ];
                 $this->local->insert('clients', $vars);
                 $client_id = $this->local->lastInsertId();
@@ -269,16 +272,18 @@ class ClientexecMigrator extends Migrator
                 $vars = [
                     'client_id' => $client_id,
                     'contact_type' => 'primary',
-                    'first_name' => $user->firstname,
-                    'last_name' => $user->lastname,
-                    'company' => $user->organization != '' ? $user->organization : null,
+                    'first_name' => $this->decode($user->firstname),
+                    'last_name' => $this->decode($user->lastname),
+                    'company' => $this->decode($user->organization != '' ? $user->organization : null),
                     'email' => $user->email,
-                    'address1' => $fields['address']->value != '' ? $fields['address']->value : null,
-                    'city' => $fields['city']->value != '' ? $fields['city']->value : null,
-                    'state' => $fields['state']->value != '' ? strtoupper(substr($fields['state']->value, 0, 2)) : null,
-                    'zip' => $fields['zipcode']->value != '' ? $fields['zipcode']->value : null,
-                    'country' => $fields['country']->value != '' ? $fields['country']->value : $this->default_country,
-                    'date_added' => $this->Users->dateToUtc($client->datecreated)
+                    'address1' => $this->decode(!empty($fields['address']->value) ? $fields['address']->value : null),
+                    'city' => $this->decode(!empty($fields['city']->value) ? $fields['city']->value : null),
+                    'state' => $this->decode(!empty($fields['state']->value)
+                        ? strtoupper(substr($fields['state']->value, 0, 2))
+                        : null),
+                    'zip' => !empty($fields['zipcode']->value) ? $fields['zipcode']->value : null,
+                    'country' => $this->decode(!empty($fields['country']->value) ? $fields['country']->value : $this->default_country),
+                    'date_added' => $this->Users->dateToUtc($user->dateactivated)
                 ];
                 $this->local->insert('contacts', $vars);
                 $contact_id = $this->local->lastInsertId();
@@ -314,13 +319,13 @@ class ClientexecMigrator extends Migrator
                     $credit_card = mcrypt_decrypt('blowfish', $user->id . $this->settings['passphrase'], base64_decode($user->data3), 'cbc', base64_decode($user->data2));
                     $vars = [
                         'contact_id' => $contact_id,
-                        'first_name' => $user->firstname,
-                        'last_name' => $user->lastname,
-                        'address1' => $fields['address']->value != '' ? $fields['address']->value : null,
-                        'city' => $fields['city']->value != '' ? $fields['city']->value : null,
-                        'state' => $fields['state']->value != '' ? strtoupper(substr($fields['state']->value, 0, 2)) : null,
+                        'first_name' => $this->decode($user->firstname),
+                        'last_name' => $this->decode($user->lastname),
+                        'address1' => $this->decode($fields['address']->value != '' ? $fields['address']->value : null),
+                        'city' => $this->decode($fields['city']->value != '' ? $fields['city']->value : null),
+                        'state' => $this->decode($fields['state']->value != '' ? strtoupper(substr($fields['state']->value, 0, 2)) : null),
                         'zip' => $fields['zipcode']->value != '' ? $fields['zipcode']->value : null,
-                        'country' => $fields['country']->value != '' ? $fields['country']->value : $this->default_country,
+                        'country' => $this->decode($fields['country']->value != '' ? $fields['country']->value : $this->default_country),
                         'number' => $credit_card,
                         'expiration' => $user->ccyear . (strlen($user->ccmonth) == 1 ? '0' . $user->ccmonth : $user->ccmonth)
                     ];
@@ -346,7 +351,7 @@ class ClientexecMigrator extends Migrator
                         'transaction_type_id' => $this->getTransactionTypeId('in_house_credit'),
                         'transaction_id' => md5($client_id . $user->balance . $user->currency),
                         'status' => 'approved',
-                        'date_added' => $this->Transactions->dateToUtc($transaction->transactiondate, 'c')
+                        'date_added' => $this->Transactions->dateToUtc(date('c'))
                     ];
                     $this->Transactions->add($vars);
                 }
@@ -375,8 +380,8 @@ class ClientexecMigrator extends Migrator
             $vars = [
                 'client_id' => $this->mappings['clients'][$note->target_id],
                 'staff_id' => isset($this->mappings['staff'][$note->admin_id]) ? $this->mappings['staff'][$note->admin_id] : 0,
-                'title' => $note->subject,
-                'description' => $note->note,
+                'title' => $this->decode($note->subject),
+                'description' => $this->decode($note->note),
                 'stickied' => 0,
                 'date_added' => $this->Clients->dateToUtc($note->date),
                 'date_updated' => $this->Clients->dateToUtc($note->date)
@@ -404,7 +409,7 @@ class ClientexecMigrator extends Migrator
             $vars = [
                 'company_id' => Configure::get('Blesta.company_id'),
                 'level' => $tax->level,
-                'name' => $tax->name,
+                'name' => $this->decode($tax->name),
                 'state' => $state ? $state->code : null,
                 'country' => $tax->countryiso != '_ALL' ? $tax->countryiso : null,
                 'amount' => $tax->tax
@@ -475,6 +480,17 @@ class ClientexecMigrator extends Migrator
             // Get invoice currency
             $currency = $this->ClientexecInvoices->getInvoiceCurrency($invoice->id);
 
+            // Unpaid (0), paid (1), and partially paid (5) are marked as active
+            $status = 'active';
+            switch ($invoice->status) {
+                case -1: // draft
+                    $status = 'draft';
+                    break;
+                case 2: // void
+                case 3: // refunded
+                    $status = 'void';
+                    break;
+            }
             // Create invoice
             $vars = [
                 'id_format' => '{num}',
@@ -484,11 +500,11 @@ class ClientexecMigrator extends Migrator
                 'date_due' => $this->Companies->dateToUtc($invoice->billdate),
                 'date_closed' => strtolower($invoice->status) != '1' || $invoice->datepaid == '0000-00-00' ? null : $this->Companies->dateToUtc($invoice->datepaid),
                 'date_autodebit' => null,
-                'status' => 'active',
+                'status' => $status,
                 'total' => number_format($invoice->amount, 4),
                 'paid' => number_format($invoice->amount - $invoice->balance_due, 4),
                 'currency' => $currency,
-                'note_public' => $invoice->note,
+                'note_public' => $this->decode($invoice->note),
                 'note_private' => null,
             ];
             $this->local->insert('invoices', $vars);
@@ -501,7 +517,7 @@ class ClientexecMigrator extends Migrator
                 $vars = [
                     'invoice_id' => $invoice_id,
                     'service_id' => null,
-                    'description' => $line->description . ' ' . $line->detail,
+                    'description' => $this->decode($line->description) . ' ' . $this->decode($line->detail),
                     'qty' => 1,
                     'amount' => $line->price,
                     'order' => 0
@@ -512,11 +528,15 @@ class ClientexecMigrator extends Migrator
                 // Import tax lines
                 if ($line->taxable == '1') {
                     if ($invoice->taxname != '') {
-                        $level1 = $this->local->select()->from('taxes')->where('name', '=', trim($invoice->taxname))->fetch();
+                        $level1 = $this->local->select()
+                            ->from('taxes')
+                            ->where('name', '=', trim($invoice->taxname))
+                            ->fetch();
 
                         $vars = [
                             'line_id' => $line_id,
-                            'tax_id' => $level1->id
+                            'tax_id' => $level1->id,
+                            'cascade' => $invoice->tax2compound
                         ];
                         $this->local->insert('invoice_line_taxes', $vars);
                     }
@@ -527,7 +547,7 @@ class ClientexecMigrator extends Migrator
                         $vars = [
                             'line_id' => $line_id,
                             'tax_id' => $level2->id,
-                            'cascade' => !empty($invoice->tax2compound) ? 1 : 0
+                            'cascade' => $invoice->tax2compound
                         ];
                         $this->local->insert('invoice_line_taxes', $vars);
                     }
@@ -567,6 +587,12 @@ class ClientexecMigrator extends Migrator
                 $status = 'refunded';
             } elseif ($transaction->accepted != '1') {
                 $status = 'declined';
+            }
+
+            // Approved transanctions on a refunded invoice should be voided so they are not counted towards credit.
+            // The refunded amount from the invoice is stored in a different transaction.
+            if ($invoice->status == 3 && $status == 'approved') {
+                $status = 'void';
             }
 
             $vars = [
@@ -671,123 +697,6 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Installs the module row.
-     *
-     * @param array $row An array of key/value pairs, including but not limited to:
-     *  - type The module name in Clientexec
-     *  - id The row ID in Clientexec
-     * @param string $module_type The type of module ('server' or 'registrar')
-     * @return int The module row ID installed (also saved in mappings['modules'] property)
-     */
-    private function installModuleRow($row, $module_type = 'server')
-    {
-        // Load required models
-        Loader::loadModels($this, ['ModuleManager']);
-
-        // Get module mapping
-        $mapping = $this->getModuleMapping($row['type'], $module_type);
-
-        // Install module
-        $module_id = $this->installModule($row['type'], $mapping);
-
-        if (!$module_id) {
-            return null;
-        }
-
-        // Install the module row
-        $this->local->insert('module_rows', ['module_id' => $module_id]);
-        $module_row_id = $this->local->lastInsertId();
-
-        $this->mappings['module_rows'][$row['type']][$row['id']] = $module_row_id;
-
-        // Install the module row meta fields
-        if (isset($mapping['module_row_meta'])) {
-            foreach ($mapping['module_row_meta'] as $meta_row) {
-                $vars = (array) $meta_row;
-                $vars['value'] = null;
-                $vars['module_row_id'] = $module_row_id;
-
-                // Get value
-                if (is_object($meta_row->value)) {
-                    $row_key = strtolower($meta_row->value->module);
-
-                    if (isset($meta_row->value->module) && array_key_exists($row_key, $row)) {
-                        $vars['value'] = $row[$row_key];
-                    }
-                } else {
-                    $vars['value'] = $meta_row->value;
-                }
-
-                // Meta row callback
-                if (isset($meta_row->callback)) {
-                    $vars['value'] = call_user_func_array($meta_row->callback, [$vars['value']]);
-                }
-
-                // Serialize value
-                if ($vars['serialized'] == 1) {
-                    $vars['value'] = serialize($vars['value']);
-                }
-
-                // Encrypt value
-                if ($vars['encrypted'] == 1) {
-                    $vars['value'] = $this->ModuleManager->systemEncrypt($vars['value']);
-                }
-
-                $this->local->insert('module_row_meta', $vars, ['module_row_id', 'key', 'value', 'serialized', 'encrypted']);
-            }
-        }
-
-        return $module_row_id;
-    }
-
-    /**
-     * Installs the given module and returns the module ID, if already installed simply returns the module ID.
-     *
-     * @param string $module The Clientexec module name
-     * @param array An array of mapping fields for this particular module
-     *  (optional, will automatically load if not given)
-     * @param null|mixed $mapping
-     * @return int The ID of the module in Blesta
-     */
-    private function installModule($module, $mapping = null)
-    {
-        // Load required models
-        Loader::loadModels($this, ['ModuleManager']);
-
-        if ($mapping == null) {
-            $mapping = $this->getModuleMapping($module);
-        }
-
-        // Return module if already mapped
-        if (isset($this->mappings['modules'][$module])) {
-            return $this->mappings['modules'][$module];
-        }
-
-        // Check if module is already installed
-        $mod = $this->local->select(['id'])->from('modules')->where('company_id', '=', Configure::get('Blesta.company_id'))->where('class', '=', $mapping['module'])->fetch();
-        if ($mod) {
-            $this->mappings['modules'][$module] = $mod->id;
-
-            return $mod->id;
-        }
-
-        // Install the module since it does not already exist
-        $module_id = null;
-        try {
-            $vars = [
-                'company_id' => Configure::get('Blesta.company_id'),
-                'class' => $mapping['module']
-            ];
-            $module_id = $this->ModuleManager->add($vars);
-        } catch (Exception $e) {
-            // Module couldn't be added
-        }
-        $this->mappings['modules'][$module] = (int) $module_id;
-
-        return $module_id;
-    }
-
-    /**
      * Import packages.
      */
     protected function importPackages()
@@ -813,7 +722,8 @@ class ClientexecMigrator extends Migrator
         foreach ($packages_groups as $package_group) {
             $vars = [
                 'company_id' => Configure::get('Blesta.company_id'),
-                'name' => $package_group->name,
+                'name' => $this->decode($package_group->name),
+                'description' => $this->decode($package_group->description == '' ? $package_group->description : null),
                 'type' => 'standard'
             ];
             $package_group_id = $this->PackageGroups->add($vars);
@@ -831,8 +741,7 @@ class ClientexecMigrator extends Migrator
             // Add product package
             if (!isset($pricing['pricedata'])) {
                 // Get module mapping
-                $module = $this->ClientexecProducts->getProductServer($package->id);
-                $server = $this->ClientexecProducts->getServer($module->server_id);
+                $server = $this->ClientexecProducts->getProductServer($package->id);
                 $mapping = $this->getModuleMapping($server->plugin);
 
                 // Add product package
@@ -840,11 +749,11 @@ class ClientexecMigrator extends Migrator
                     'id_format' => '{num}',
                     'id_value' => $package->id,
                     'module_id' => $this->mappings['modules'][$server->plugin],
-                    'name' => $package->planname,
-                    'description' => strip_tags($package->description),
-                    'description_html' => $package->description,
+                    'name' => $this->decode($package->planname),
+                    'description' => $this->decode(strip_tags($package->description)),
+                    'description_html' => $this->decode($package->description),
                     'qty' => $stock['stockEnabled'] == '1' ? $stock['availableStock'] : null,
-                    'module_row' => $this->mappings['module_rows'][$server->plugin][$module->server_id],
+                    'module_row' => $this->mappings['module_rows'][$server->plugin][$server->id],
                     'module_group' => null,
                     'taxable' => 1,
                     'status' => $package->showpackage == '1' ? 'active' : 'restricted',
@@ -884,9 +793,9 @@ class ClientexecMigrator extends Migrator
                     'id_format' => '{num}',
                     'id_value' => $package->id,
                     'module_id' => $this->mappings['modules'][$module],
-                    'name' => $package->planname,
+                    'name' => $this->decode($package->planname),
                     'description' => strip_tags($package->description),
-                    'description_html' => $package->description,
+                    'description_html' => $this->decode($package->description),
                     'qty' => $stock['stockEnabled'] == '1' ? $stock['availableStock'] : null,
                     'module_row' => $this->mappings['module_rows'][$module][$module],
                     'module_group' => null,
@@ -925,96 +834,6 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Adds package pricing.
-     *
-     * @param array $pricing A numerically indexed array of pricing info including:
-     *  - term
-     *  - period
-     *  - price
-     *  - setup_fee
-     *  - cancel_fee
-     *  - currency
-     * @param string $package_id The Blesta package ID to add pricing to
-     */
-    private function addPackagePricing($pricing, $package_id)
-    {
-        // Add package pricing
-        $pricing_id = null;
-        foreach ($pricing as $price) {
-            if (version_compare(BLESTA_VERSION, '3.1.0-b1', '>=')) {
-                $vars = $price;
-                $vars['company_id'] = Configure::get('Blesta.company_id');
-
-                $this->local->insert('pricings', $vars);
-                $pricing_id = $this->local->lastInsertId();
-
-                $this->local->insert(
-                    'package_pricing',
-                    [
-                        'package_id' => $package_id,
-                        'pricing_id' => $pricing_id
-                    ]
-                );
-                $pricing_id = $this->local->lastInsertId();
-            } else {
-                $vars = $price;
-                $vars['package_id'] = $package_id;
-                $this->local->insert('package_pricing', $vars);
-                $pricing_id = $this->local->lastInsertId();
-            }
-        }
-
-        return $pricing_id;
-    }
-
-    /**
-     * Adds package meta for the given package.
-     *
-     * @param array $package An array of package info including:
-     *  - id The ID of the package in WHMCS
-     *  - * misc package fields
-     * @param array $mapping An array of module mapping config settings
-     */
-    private function addPackageMeta($package, $mapping)
-    {
-        // Add package meta
-        if (isset($mapping['package_meta'])) {
-            foreach ($mapping['package_meta'] as $meta) {
-                $vars = (array) $meta;
-                $vars['package_id'] = $this->mappings['packages'][$package['id']];
-                $vars['value'] = null;
-
-                if (is_object($meta->value)) {
-                    if (isset($meta->value->package)) {
-                        $meta_key = strtolower($meta->value->package);
-                        if (array_key_exists($meta_key, $package)) {
-                            $vars['value'] = $package[$meta_key];
-                            if ($meta_key == 'password') {
-                                $vars['value'] = $this->decryptData($package[$meta_key]);
-                            }
-                        }
-                    }
-                } else {
-                    $vars['value'] = $meta->value;
-                }
-
-                if (isset($meta->callback)) {
-                    $vars['value'] = call_user_func_array($meta->callback, [$vars['value']]);
-                }
-
-                if ($vars['serialized'] == 1) {
-                    $vars['value'] = serialize($vars['value']);
-                }
-                if ($vars['encrypted'] == 1) {
-                    $vars['value'] = $this->ModuleManager->systemEncrypt($vars['value']);
-                }
-
-                $this->local->insert('package_meta', $vars, ['package_id', 'key', 'value', 'serialized', 'encrypted']);
-            }
-        }
-    }
-
-    /**
      * Import package options.
      */
     protected function importPackageOptions()
@@ -1046,8 +865,8 @@ class ClientexecMigrator extends Migrator
                 if (!isset($this->mappings['package_options_groups'][$package->product_id])) {
                     $vars = [
                         'company_id' => Configure::get('Blesta.company_id'),
-                        'name' => $package_data->planname . ' Addons',
-                        'description' => strip_tags($package_data->description),
+                        'name' => $this->decode($package_data->planname . ' Addons'),
+                        'description' => $this->decode(strip_tags($package_data->description)),
                         'packages' => [
                             $this->mappings['packages'][$package->product_id]
                         ]
@@ -1274,8 +1093,8 @@ class ClientexecMigrator extends Migrator
             // Create department
             $vars = [
                 'company_id' => Configure::get('Blesta.company_id'),
-                'name' => $department->name,
-                'description' => $department->name . ' Department',
+                'name' => $this->decode($department->name),
+                'description' => $this->decode($department->name . ' Department'),
                 'email' => $email,
                 'method' => 'none',
                 'security' => 'none',
@@ -1366,7 +1185,7 @@ class ClientexecMigrator extends Migrator
                 'service_id' => null,
                 'client_id' => $ticket->userid > 0 && isset($this->mappings['clients'][$ticket->userid]) ? $this->mappings['clients'][$ticket->userid] : null,
                 'email' => null,
-                'summary' => $ticket->subject,
+                'summary' => $this->decode($ticket->subject),
                 'priority' => isset($priorities[$ticket->priority]) ? $priorities[$ticket->priority] : 'medium',
                 'status' => isset($statuses[$ticket->status]) ? $statuses[$ticket->status] : 'open',
                 'date_added' => $this->Companies->dateToUtc($ticket->datesubmitted),
@@ -1384,7 +1203,7 @@ class ClientexecMigrator extends Migrator
                         'ticket_id' => $this->mappings['support_tickets'][$response->troubleticketid],
                         'staff_id' => isset($this->mappings['staff'][$response->userid]) ? $this->mappings['staff'][$response->userid] : null,
                         'type' => 'reply',
-                        'details' => $response->message,
+                        'details' => $this->decode($response->message),
                         'date_added' => $this->Companies->dateToUtc($response->mydatetime),
                     ];
                     $this->local->insert('support_replies', $vars);
@@ -1407,8 +1226,8 @@ class ClientexecMigrator extends Migrator
         foreach ($responses as $response) {
             $vars = [
                 'category_id' => $category_id,
-                'name' => $response->name,
-                'details' => $response->response
+                'name' => $this->decode($response->name),
+                'details' => $this->decode($response->response)
             ];
             $this->local->insert('support_responses', $vars);
         }
@@ -1432,8 +1251,8 @@ class ClientexecMigrator extends Migrator
         foreach ($categories as $category) {
             $vars = [
                 'company_id' => Configure::get('Blesta.company_id'),
-                'name' => $category->name,
-                'description' => $category->description,
+                'name' => $this->decode($category->name),
+                'description' => $this->decode($category->description),
                 'access' => $category->staffonly == '1' ? 'hidden' : 'public',
                 'date_created' => $this->Companies->dateToUtc(date('c')),
                 'date_updated' => $this->Companies->dateToUtc(date('c'))
@@ -1457,8 +1276,8 @@ class ClientexecMigrator extends Migrator
                 $vars = [
                     'article_id' => $article_id,
                     'lang' => 'en_us',
-                    'title' => $article->title,
-                    'body' => $article->content,
+                    'title' => $this->decode($article->title),
+                    'body' => $this->decode($article->content),
                     'content_type' => 'html'
                 ];
                 $this->local->insert('support_kb_article_content', $vars);
@@ -1545,7 +1364,7 @@ class ClientexecMigrator extends Migrator
         // Load remote model
         $this->loadModel('ClientexecSettings');
 
-        $settings = [
+        $setting_fields = [
             'smtp_host' => 'smtp_host',
             'smtp_password' => 'smtp_password',
             'smtp_port' => 'smtp_port',
@@ -1557,67 +1376,16 @@ class ClientexecMigrator extends Migrator
 
         // Import settings
         foreach ($settings as $setting) {
-            if (isset($settings[$setting->name])) {
-                $this->Settings->setSetting($settings[$setting->name], $setting->value);
+            if (isset($setting_fields[$setting->name])) {
+                $this->Settings->setSetting($setting_fields[$setting->name], $setting->value);
             }
         }
     }
 
     /**
-     * Returns the transaction type ID.
-     *
-     * @param string $type The version 2 transaction type
-     * @return string The transaction type ID
-     */
-    private function getTransactionTypeId($type)
-    {
-        static $trans_types = null;
-
-        if (!isset($this->Transactions)) {
-            Loader::loadModels($this, ['Transactions']);
-        }
-
-        if ($trans_types == null) {
-            $trans_types = $this->Transactions->getTypes();
-        }
-
-        switch ($type) {
-            default:
-            case 'other':
-            case 'credit':
-                return null;
-            case 'cash':
-                // Fall through
-            case 'check':
-                foreach ($trans_types as $trans_type) {
-                    if ($trans_type->name == $type) {
-                        return $trans_type->id;
-                    }
-                }
-            // Fall through
-            case 'in_house_credit':
-                foreach ($trans_types as $trans_type) {
-                    if ($trans_type->name == 'in_house_credit') {
-                        return $trans_type->id;
-                    }
-                }
-            // Fall through
-            case 'money_order':
-                foreach ($trans_types as $trans_type) {
-                    if ($trans_type->name == 'money_order') {
-                        return $trans_type->id;
-                    }
-                }
-        }
-
-        return null;
-    }
-
-    /**
      * Returns the currency format.
      *
-     * @param int WHMCS currency format value
-     * @param mixed $currency
+     * @param mixed $currency Clientexec currency format value
      * @return string Blesta currency format value
      */
     private function getCurrencyFormat($currency)
@@ -1632,7 +1400,21 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Load the given local model.
+     * Decodes the HTML entities and UTF8 characters of the given string
+     *
+     * @param string $str The string to decode
+     * @return string The decoded string
+     */
+    protected function decode($str)
+    {
+        if ($str === null) {
+            return $str;
+        }
+        return utf8_encode(html_entity_decode($str, ENT_QUOTES, 'UTF-8'));
+    }
+
+    /**
+     * Load the given local model
      *
      * @param string $name The name of the model to load
      */
@@ -1642,82 +1424,5 @@ class ClientexecMigrator extends Migrator
         $file = Loader::fromCamelCase($name);
         Loader::load($this->path . DS . 'models' . DS . $file . '.php');
         $this->{$name} = new $name($this->remote);
-    }
-
-    /**
-     * Set debug data.
-     *
-     * @param string $str The debug data
-     */
-    protected function debug($str)
-    {
-        static $set_buffering = false;
-
-        if ($this->enable_debug) {
-            if (!$set_buffering) {
-                ini_set('output_buffering', 'off');
-                ini_set('zlib.output_compression', false);
-                @ob_end_flush();
-
-                ini_set('implicit_flush', true);
-                ob_implicit_flush(true);
-
-                header('Content-type: text/plain');
-                header('Cache-Control: no-cache');
-                $set_buffering = true;
-            }
-
-            echo $str . "\n";
-
-            @ob_flush();
-            flush();
-        }
-    }
-
-    /**
-     * Start a timer for the given task.
-     *
-     * @param string $task
-     */
-    protected function startTimer($task)
-    {
-        $this->task[$task] = ['start' => microtime(true), 'end' => 0, 'total' => 0];
-    }
-
-    /**
-     * Pause a timer for the given task.
-     *
-     * @param string $task
-     */
-    protected function pauseTimer($task)
-    {
-        $this->task[$task]['end'] = microtime(true);
-        $this->task[$task]['total'] += ($this->task[$task]['end'] - $this->task[$task]['start']);
-    }
-
-    /**
-     * Unpause a timer for the given task.
-     *
-     * @param string $task
-     */
-    protected function unpauseTimer($task)
-    {
-        $this->task[$task]['start'] = microtime(true);
-    }
-
-    /**
-     * End a timer for the given task, output to debug.
-     *
-     * @param string $task
-     */
-    protected function endTimer($task)
-    {
-        if ($this->task[$task]['start'] > $this->task[$task]['end']) {
-            $this->pauseTimer($task);
-        }
-
-        if ($this->enable_debug) {
-            $this->debug($task . ' took: ' . round($this->task[$task]['total'], 4) . ' seconds');
-        }
     }
 }

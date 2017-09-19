@@ -27,7 +27,7 @@ class ClientexecProducts
      */
     public function get()
     {
-        return $this->remote->select()->from('package')->getStatement()->fetchAll();
+        return $this->remote->select()->from('package')->fetchAll();
     }
 
     /**
@@ -37,7 +37,7 @@ class ClientexecProducts
      */
     public function getServers()
     {
-        return $this->remote->select()->from('server')->getStatement()->fetchAll();
+        return $this->remote->select()->from('server')->fetchAll();
     }
 
     /**
@@ -48,7 +48,7 @@ class ClientexecProducts
      */
     public function getServer($server_id)
     {
-        return $this->remote->select()->from('server')->where('id', '=', $server_id)->getStatement()->fetch();
+        return $this->remote->select()->from('server')->where('id', '=', $server_id)->fetch();
     }
 
     /**
@@ -59,7 +59,7 @@ class ClientexecProducts
      */
     public function getServerFields($server_id)
     {
-        return $this->remote->select()->from('serverplugin_options')->where('serverid', '=', $server_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('serverplugin_options')->where('serverid', '=', $server_id)->fetchAll();
     }
 
     /**
@@ -70,7 +70,7 @@ class ClientexecProducts
      */
     public function getServerNameservers($server_id)
     {
-        return $this->remote->select()->from('nameserver')->where('serverid', '=', $server_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('nameserver')->where('serverid', '=', $server_id)->fetchAll();
     }
 
     /**
@@ -81,7 +81,7 @@ class ClientexecProducts
      */
     public function getProduct($package_id)
     {
-        return $this->remote->select()->from('package')->where('id', '=', $package_id)->getStatement()->fetch();
+        return $this->remote->select()->from('package')->where('id', '=', $package_id)->fetch();
     }
 
     /**
@@ -92,75 +92,76 @@ class ClientexecProducts
      */
     public function getProductPricing($package_id)
     {
-        $package = $this->remote->select()->from('package')->where('id', '=', $package_id)->getStatement()->fetch();
+        $package = $this->remote->select()->from('package')->where('id', '=', $package_id)->fetch();
         $pricing = unserialize($package->pricing);
-        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->getStatement()->fetch();
+        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->fetch();
+        $currency = !empty($currency->value) ? $currency->value : 'USD';
 
         $pricing_terms = [];
 
         if (!isset($pricing['pricedata'])) {
             // Monthly term
-            if ($pricing['price1'] > 0) {
+            if (isset($pricing['price1']) && $pricing['price1'] > 0) {
                 $pricing_terms[] = [
                     'term' => 1,
                     'period' => 'month',
                     'price' => number_format($pricing['price1'], 4, '.', ''),
                     'setup_fee' => number_format($pricing['price1_setup'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
             // Quarterly term
-            if ($pricing['price3'] > 0) {
+            if (isset($pricing['price3']) && $pricing['price3'] > 0) {
                 $pricing_terms[] = [
                     'term' => 3,
                     'period' => 'month',
                     'price' => number_format($pricing['price3'], 4, '.', ''),
                     'setup_fee' => number_format($pricing['price3_setup'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
             // Semi-annual term
-            if ($pricing['price6'] > 0) {
+            if (isset($pricing['price6']) && $pricing['price6'] > 0) {
                 $pricing_terms[] = [
                     'term' => 6,
                     'period' => 'month',
                     'price' => number_format($pricing['price6'], 4, '.', ''),
                     'setup_fee' => number_format($pricing['price6_setup'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
             // Annual term
-            if ($pricing['price12'] > 0) {
+            if (isset($pricing['price12']) && $pricing['price12'] > 0) {
                 $pricing_terms[] = [
                     'term' => 1,
                     'period' => 'year',
                     'price' => number_format($pricing['price12'], 4, '.', ''),
                     'setup_fee' => number_format($pricing['price12_setup'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
             // Biannually term
-            if ($pricing['price24'] > 0) {
+            if (isset($pricing['price24']) && $pricing['price24'] > 0) {
                 $pricing_terms[] = [
                     'term' => 2,
                     'period' => 'year',
                     'price' => number_format($pricing['price24'], 4, '.', ''),
                     'setup_fee' => number_format($pricing['price24_setup'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
             // One-time term
-            if ($pricing['onetime'] > 0) {
+            if (isset($pricing['onetime']) && $pricing['onetime'] > 0) {
                 $pricing_terms[] = [
                     'term' => 0,
                     'period' => 'onetime',
                     'price' => number_format($pricing['onetime'], 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
         } else {
@@ -170,7 +171,7 @@ class ClientexecProducts
                         'term' => $price['period'],
                         'period' => $price['period'] == '0' ? 'onetime' : 'year',
                         'price' => number_format($price['price'], 4, '.', ''),
-                        'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                        'currency' => $currency
                     ];
                 }
             }
@@ -183,7 +184,7 @@ class ClientexecProducts
                 'period' => 'month',
                 'price' => '0.0000',
                 'setup_fee' => '0.0000',
-                'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                'currency' => $currency
             ];
         }
 
@@ -191,14 +192,18 @@ class ClientexecProducts
     }
 
     /**
-     * Get the server ID of an specific package.
+     * Get the server of a specific package.
      *
      * @param mixed $package_id
      * @return mixed The result of the sql transaction
      */
     public function getProductServer($package_id)
     {
-        return $this->remote->select()->from('package_server')->where('package_id', '=', $package_id)->getStatement()->fetch();
+        return $this->remote->select('server.*')
+            ->from('package_server')
+            ->innerJoin('server', 'server.id', '=', 'package_server.server_id', false)
+            ->where('package_server.package_id', '=', $package_id)
+            ->fetch();
     }
 
     /**
@@ -209,7 +214,7 @@ class ClientexecProducts
      */
     public function getProductFields($package_id)
     {
-        $product_fields = $this->remote->select()->from('package_variable')->where('packageid', '=', $package_id)->getStatement()->fetchAll();
+        $product_fields = $this->remote->select()->from('package_variable')->where('packageid', '=', $package_id)->fetchAll();
 
         foreach ($product_fields as $key => $value) {
             $product_fields[$key]->varname = str_replace(' ', '_', strtolower($value->varname));
@@ -249,7 +254,7 @@ class ClientexecProducts
      */
     public function getRegistrarFields($registrar)
     {
-        return $this->remote->select()->from('setting')->where('name', 'LIKE', 'plugin_' . $registrar . '_%')->getStatement()->fetchAll();
+        return $this->remote->select()->from('setting')->where('name', 'LIKE', 'plugin_' . $registrar . '_%')->fetchAll();
     }
 
     /**
@@ -259,7 +264,7 @@ class ClientexecProducts
      */
     public function getGroups()
     {
-        return $this->remote->select()->from('promotion')->getStatement()->fetchAll();
+        return $this->remote->select()->from('promotion')->fetchAll();
     }
 
     /**
@@ -270,7 +275,7 @@ class ClientexecProducts
      */
     public function getGroup($group_id)
     {
-        return $this->remote->select()->from('promotion')->where('id', '=', $group_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('promotion')->where('id', '=', $group_id)->fetchAll();
     }
 
     /**
@@ -280,7 +285,7 @@ class ClientexecProducts
      */
     public function getAddons()
     {
-        return $this->remote->select()->from('packageaddon')->where('name', '!=', 'No name given')->getStatement()->fetchAll();
+        return $this->remote->select()->from('packageaddon')->where('name', '!=', 'No name given')->fetchAll();
     }
 
     /**
@@ -291,7 +296,7 @@ class ClientexecProducts
      */
     public function getAddonPackages($addon_id)
     {
-        return $this->remote->select()->from('product_addon')->where('addon_id', '!=', $addon_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('product_addon')->where('addon_id', '!=', $addon_id)->fetchAll();
     }
 
     /**
@@ -302,8 +307,9 @@ class ClientexecProducts
      */
     public function getAddonPricing($addon_id)
     {
-        $prices = $this->remote->select()->from('packageaddon_prices')->where('packageaddon_id', '=', $addon_id)->getStatement()->fetchAll();
-        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->getStatement()->fetch();
+        $prices = $this->remote->select()->from('packageaddon_prices')->where('packageaddon_id', '=', $addon_id)->fetchAll();
+        $currency = $this->remote->select()->from('setting')->where('name', '=', 'Default Currency')->fetch();
+        $currency = !empty($currency->value) ? $currency->value : 'USD';
         $values = [];
 
         foreach ($prices as $price) {
@@ -316,7 +322,7 @@ class ClientexecProducts
                     'period' => 'month',
                     'price' => number_format($price->price1, 4, '.', ''),
                     'setup_fee' => number_format($price->price0, 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
@@ -327,7 +333,7 @@ class ClientexecProducts
                     'period' => 'month',
                     'price' => number_format($price->price3, 4, '.', ''),
                     'setup_fee' => number_format($price->price0, 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
@@ -338,7 +344,7 @@ class ClientexecProducts
                     'period' => 'month',
                     'price' => number_format($price->price6, 4, '.', ''),
                     'setup_fee' => number_format($price->price0, 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
@@ -349,7 +355,7 @@ class ClientexecProducts
                     'period' => 'year',
                     'price' => number_format($price->price12, 4, '.', ''),
                     'setup_fee' => number_format($price->price0, 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
@@ -360,7 +366,7 @@ class ClientexecProducts
                     'period' => 'year',
                     'price' => number_format($price->price24, 4, '.', ''),
                     'setup_fee' => number_format($price->price0, 4, '.', ''),
-                    'currency' => !empty($currency->value) ? $currency->value : 'USD'
+                    'currency' => $currency
                 ];
             }
 
@@ -384,7 +390,7 @@ class ClientexecProducts
      */
     public function getAddonsGroups()
     {
-        $groups = $this->remote->select()->from('productgroup_addon')->getStatement()->fetchAll();
+        $groups = $this->remote->select()->from('productgroup_addon')->fetchAll();
 
         $addon_groups = [];
         foreach ($groups as $group) {

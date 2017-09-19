@@ -27,6 +27,6 @@ class ClientexecTransactions
      */
     public function get()
     {
-        return $this->remote->select()->from('invoicetransaction')->getStatement()->fetchAll();
+        return $this->remote->select()->from('invoicetransaction')->fetchAll();
     }
 }

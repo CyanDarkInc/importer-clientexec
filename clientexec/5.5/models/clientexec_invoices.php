@@ -27,52 +27,55 @@ class ClientexecInvoices
      */
     public function get()
     {
-        return $this->remote->select()->from('invoice')->getStatement()->fetchAll();
+        return $this->remote->select()->from('invoice')->fetchAll();
     }
 
     /**
-     * Get an specific invoice.
+     * Get the specific invoice.
      *
-     * @param mixed $invoice_id
+     * @param int $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoice($invoice_id)
     {
-        return $this->remote->select()->from('invoice')->where('id', '=', $invoice_id)->getStatement()->fetch();
+        return $this->remote->select()->from('invoice')->where('id', '=', $invoice_id)->fetch();
     }
 
     /**
      * Get all invoice lines from an specific invoice.
      *
-     * @param mixed $invoice_id
+     * @param int $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceLines($invoice_id)
     {
-        return $this->remote->select()->from('invoiceentry')->where('invoiceid', '=', $invoice_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('invoiceentry')->where('invoiceid', '=', $invoice_id)->fetchAll();
     }
 
     /**
      * Get all transactions from an specific invoice.
      *
-     * @param mixed $invoice_id
+     * @param int $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceTransactions($invoice_id)
     {
-        return $this->remote->select()->from('invoicetransaction')->where('invoiceid', '=', $invoice_id)->getStatement()->fetchAll();
+        return $this->remote->select()->from('invoicetransaction')->where('invoiceid', '=', $invoice_id)->fetchAll();
     }
 
     /**
      * Get the currency from an specific invoice.
      *
-     * @param mixed $invoice_id
+     * @param int $invoice_id
      * @return mixed The result of the sql transaction
      */
     public function getInvoiceCurrency($invoice_id)
     {
-        $invoice = $this->remote->select()->from('invoice')->where('id', '=', $invoice_id)->getStatement()->fetch();
-        $customer = $this->remote->select()->from('users')->where('id', '=', $invoice->customerid)->getStatement()->fetch();
+        $customer = $this->remote->select()
+            ->from('invoice')
+            ->innerJoin('users', 'users.id', '=', 'invoice.customerid')
+            ->where('invoice.id', '=', $invoice_id)
+            ->fetch();
 
         return !empty($customer->currency) ? $customer->currency : 'USD';
     }
