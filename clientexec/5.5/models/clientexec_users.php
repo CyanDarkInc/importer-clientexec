@@ -43,6 +43,7 @@ class ClientexecUsers
     /**
      * Get all users of the given type.
      *
+     * @param mixed $type
      * @return mixed The result of the sql transaction
      */
     private function get($type)
