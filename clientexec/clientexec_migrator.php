@@ -1400,7 +1400,7 @@ class ClientexecMigrator extends Migrator
     }
 
     /**
-     * Decodes the HTML entities and UTF8 characters of the given string
+     * Decodes the HTML entities and UTF8 characters of the given string.
      *
      * @param string $str The string to decode
      * @return string The decoded string
@@ -1410,11 +1410,12 @@ class ClientexecMigrator extends Migrator
         if ($str === null) {
             return $str;
         }
+
         return utf8_encode(html_entity_decode($str, ENT_QUOTES, 'UTF-8'));
     }
 
     /**
-     * Load the given local model
+     * Load the given local model.
      *
      * @param string $name The name of the model to load
      */
